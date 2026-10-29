@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import CurrentWeather from './components/CurrentWeather';
 import ForecastList from './components/ForecastList';
 import SearchBar from './components/SearchBar';
@@ -14,6 +14,10 @@ export default function App() {
   const [unit, setUnit] = useState<Unit>('celsius');
   const mainRef = useRef<HTMLElement>(null);
   const { status, data, error, search, retry } = useWeather();
+
+  useEffect(() => {
+    if (status === 'success') mainRef.current?.focus();
+  }, [status]);
 
   return (
     <div className="min-h-screen bg-night-900 font-sans text-white">
@@ -35,6 +39,7 @@ export default function App() {
           ref={mainRef}
           id="main-content"
           tabIndex={-1}
+          aria-busy={status === 'loading'}
           className="min-w-0 space-y-6 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-400"
         >
           {status === 'idle' && (

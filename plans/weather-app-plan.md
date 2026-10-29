@@ -119,6 +119,25 @@ MVP.
 
 ## 4. Data Model
 
+### Política de nulidade no fluxo implementado
+
+| Campos externos consumidos | Normalização e apresentação |
+| -------------------------- | --------------------------- |
+| Geocoding `results` ausente | `[]`; estado vazio. `results: null` ou formato não-array é erro de contrato. |
+| `country`, `admin1`, `timezone` do geocoding | Ausência/null vira null; região/país omitidos na UI, coordenadas quando ambos faltam. Forecast fornece o fuso validado. |
+| Geocoding `id` ausente | Omitir providerId; não inventar identificador. |
+| Nome/coordenadas da cidade, current/daily, fuso do forecast, unidades, horário, temperaturas e códigos WMO | Ausência/null rejeita resposta com WeatherServiceError, sem cartão parcial. |
+| `current.apparent_temperature`, `relative_humidity_2m`, `wind_speed_10m`, `pressure_msl` | Ausência/null vira null no domínio; UI mostra “—”, inclusive ao alternar unidade. Tipo inválido ou valor fora da faixa continua erro. |
+| `current.precipitation` | null vira 0 mm por decisão explícita anterior; ausente continua erro. |
+| `daily.precipitation_probability_max` | Array ausente/null produz cinco probabilidades null; posição null vira null; UI mostra “—”, não 0%. Array presente deve ter cinco valores. |
+| Demais arrays diários / posições | Exatamente cinco valores válidos e alinhados, ou erro de dados. |
+
+Essas regras tratam defensivamente os campos consumidos; não afirmam que todos
+sejam documentados como opcionais pelo provedor. Campos externos não consumidos
+são ignorados. Não usar `value || 0`, pois isso mistura ausência, erro e zero real.
+As métricas complementares acima são `number | null` no contrato implementado
+e no esboço abaixo.
+
 Os modelos internos não expõem os tipos crus da Open-Meteo à UI. Campos
 necessários para a renderização são validados no service; coordenadas e
 identificador do provedor sustentam consulta e persistência.
@@ -139,11 +158,11 @@ interface City {
 interface CurrentWeather {
   observedAt: string; // ISO 8601 do provedor
   temperatureC: number;
-  apparentTemperatureC: number;
-  relativeHumidityPercent: number;
-  windSpeedKmh: number;
+  apparentTemperatureC: number | null;
+  relativeHumidityPercent: number | null;
+  windSpeedKmh: number | null;
   precipitationMm: number; // Acumulado no intervalo atual do provedor
-  pressureMslHpa: number; // Pressão ao nível do mar
+  pressureMslHpa: number | null; // Pressão ao nível do mar
   weatherCode: number;
 }
 
@@ -151,7 +170,7 @@ interface ForecastDay {
   date: string; // YYYY-MM-DD no fuso da cidade
   temperatureMaxC: number;
   temperatureMinC: number;
-  precipitationProbabilityPercent: number; // Maior probabilidade diária, 0–100%
+  precipitationProbabilityPercent: number | null; // Maior probabilidade diária, 0–100%
   weatherCode: number;
 }
 
@@ -414,6 +433,13 @@ interface WeatherViewState {
 ```
 
 ### Ciclo e ownership do estado
+
+No fluxo atual por envio explícito, `main` expõe `aria-busy` enquanto busca
+ou forecast estiverem pendentes. Ao entrar em sucesso, o foco vai para esse
+conteúdo focável; alternar unidade não desloca o foco. A busca permanece
+editável para permitir substituir uma operação pendente. Botões desabilitados
+não recebem hover de ação, e o input usa texto de 16 px para evitar zoom no iOS.
+Não adicionar memoização sem evidência de custo de renderização relevante.
 
 - **Busca:** `idle` até o termo atingir 2 pontos de código Unicode; depois do
   debounce de 300 ms passa a `loading`. Sucesso com resultados → `success`;

@@ -35,12 +35,12 @@ export default function SearchBar({ onSearch, disabled = false }: SearchBarProps
           onChange={(event) => setCity(event.target.value)}
           disabled={disabled}
           placeholder={messages.searchPlaceholder}
-          className="min-h-11 min-w-0 flex-1 rounded-xl border border-slate-400 bg-night-800 px-4 py-2 text-white placeholder:text-slate-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-400 disabled:cursor-not-allowed disabled:opacity-50"
+          className="min-h-11 min-w-0 flex-1 rounded-xl border border-slate-400 bg-night-800 px-4 py-2 text-base text-white placeholder:text-slate-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-400 disabled:cursor-not-allowed disabled:opacity-50"
         />
         <button
           type="submit"
           disabled={disabled || !trimmedCity}
-          className="min-h-11 min-w-11 rounded-xl bg-accent-500 px-5 py-2 font-semibold text-night-900 hover:bg-accent-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-400 disabled:cursor-not-allowed disabled:opacity-50"
+          className="min-h-11 min-w-11 rounded-xl bg-accent-500 px-5 py-2 font-semibold text-night-900 enabled:hover:bg-accent-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-400 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {messages.searchSubmit}
         </button>

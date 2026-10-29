@@ -6,6 +6,12 @@ import mockWeatherData from '../../src/mocks/weatherData';
 const day = mockWeatherData.days[0];
 
 describe('ForecastCard', () => {
+  it('mostra traço, não zero, para probabilidade desconhecida', () => {
+    render(<ForecastCard day={{ ...day, precipitationProbabilityPercent: null }} unit="celsius" />);
+    expect(screen.getByText('—', { exact: true })).toBeVisible();
+    expect(screen.queryByText('0 %')).not.toBeInTheDocument();
+  });
+
   it('exibe dia, data, condição e temperaturas em Celsius', () => {
     render(<ForecastCard day={day} unit="celsius" />);
 

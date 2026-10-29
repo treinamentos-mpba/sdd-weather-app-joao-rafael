@@ -63,6 +63,18 @@ describe('searchCities', () => {
     expect(await searchCities('Salvador')).toEqual([]);
   });
 
+  it.each([
+    "Saint-Jean-d'Angély",
+    '東京 & 東京',
+    '<img src=x onerror=alert(1)>',
+  ])('preserva a identidade do resultado e codifica o termo como texto: %s', async (name) => {
+    const fetchMock = mockResponse({ results: [{ ...city, name }] });
+    expect((await searchCities(`  ${name}  `))[0].name).toBe(name);
+    const url = new URL(fetchMock.mock.calls[0][0]);
+    expect(url.searchParams.get('name')).toBe(name);
+    expect([...url.searchParams.keys()]).toEqual(['name', 'count', 'language', 'format']);
+  });
+
   it('preserva ordem, limita a oito e normaliza campos opcionais ausentes', async () => {
     mockResponse({
       results: Array.from({ length: 10 }, (_, index) => ({
@@ -163,6 +175,45 @@ describe('searchCities', () => {
   }
 
   describe('getWeather', () => {
+    it.each([
+      null,
+      undefined,
+    ])('normaliza métricas complementares %s sem inventar zero', async (value) => {
+      const data = forecastResponse();
+      mockResponse({
+        ...data,
+        current: {
+          ...data.current,
+          apparent_temperature: value,
+          relative_humidity_2m: value,
+          wind_speed_10m: value,
+          pressure_msl: value,
+        },
+        daily: { ...data.daily, precipitation_probability_max: value },
+      });
+      const result = await getWeather(mockWeatherData.city);
+      expect(result.current).toMatchObject({
+        apparentTemperatureC: null,
+        relativeHumidityPercent: null,
+        windSpeedKmh: null,
+        pressureMslHpa: null,
+      });
+      expect(result.days.map((day) => day.precipitationProbabilityPercent)).toEqual(
+        Array(5).fill(null),
+      );
+    });
+
+    it('preserva null individual na probabilidade e zero em outro dia', async () => {
+      const data = forecastResponse();
+      mockResponse({
+        ...data,
+        daily: { ...data.daily, precipitation_probability_max: [null, 0, 80, 10, 0] },
+      });
+      const result = await getWeather(mockWeatherData.city);
+      expect(result.days[0].precipitationProbabilityPercent).toBeNull();
+      expect(result.days[1].precipitationProbabilityPercent).toBe(0);
+    });
+
     it('normaliza precipitação atual null para zero', async () => {
       const data = forecastResponse();
       mockResponse({ ...data, current: { ...data.current, precipitation: null } });

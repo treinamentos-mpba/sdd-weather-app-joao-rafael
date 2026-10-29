@@ -35,7 +35,11 @@ export default function ForecastCard({ day, unit }: ForecastCardProps) {
         </div>
         <div>
           <dt className="text-sm text-slate-300">{messages.rainProbability}</dt>
-          <dd>{day.precipitationProbabilityPercent.toLocaleString('pt-BR')} %</dd>
+          <dd>
+            {day.precipitationProbabilityPercent === null
+              ? messages.unavailableValue
+              : `${day.precipitationProbabilityPercent.toLocaleString('pt-BR')} %`}
+          </dd>
         </div>
       </dl>
     </article>

@@ -240,6 +240,8 @@ And se um campo obrigatório estiver ausente ou inválido, o app exibe erro
   de dados em vez de apresentar um cartão parcial como completo
 And a exceção explícita é precipitação atual null, normalizada para 0 mm;
   campo ausente não é normalizado
+And sensação, umidade, vento e pressão ausentes/null são complementares:
+  aparecem como "—", sem conversão de null para zero
 ```
 
 **AC-03.2 — Identificação e frescor** *(Teste-alvo: E2E)*
@@ -300,6 +302,7 @@ When o usuário observa cada entrada
 Then cada dia mostra: dia da semana abreviado em pt-BR (ex.: "qua."),
   temperatura máxima, temperatura mínima, condição (texto + ícone)
   e probabilidade de chuva (0–100%, não volume em mm)
+And probabilidade indisponível aparece como "—", não como 0%
 And máxima é sempre maior ou igual à mínima
 And a data de cada entrada é distinta e consecutiva no fuso da cidade
 ```

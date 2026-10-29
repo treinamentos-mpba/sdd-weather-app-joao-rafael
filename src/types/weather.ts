@@ -23,15 +23,15 @@ export interface CurrentWeather {
   /** Temperatura atual em Celsius, sem arredondamento de apresentação. */
   temperatureC: number;
   /** Sensação térmica em Celsius, sem arredondamento de apresentação. */
-  apparentTemperatureC: number;
+  apparentTemperatureC: number | null;
   /** Umidade relativa do ar em porcentagem. */
-  relativeHumidityPercent: number;
+  relativeHumidityPercent: number | null;
   /** Velocidade do vento em quilômetros por hora. */
-  windSpeedKmh: number;
+  windSpeedKmh: number | null;
   /** Precipitação acumulada no intervalo atual do provedor, em milímetros. */
   precipitationMm: number;
   /** Pressão atmosférica ao nível do mar em hectopascais. */
-  pressureMslHpa: number;
+  pressureMslHpa: number | null;
   /** Código meteorológico WMO retornado pelo provedor. */
   weatherCode: number;
 }
@@ -44,7 +44,7 @@ export interface ForecastDay {
   /** Temperatura mínima diária em Celsius. */
   temperatureMinC: number;
   /** Maior probabilidade de precipitação do dia, de 0 a 100 por cento. */
-  precipitationProbabilityPercent: number;
+  precipitationProbabilityPercent: number | null;
   /** Código meteorológico WMO retornado pelo provedor. */
   weatherCode: number;
 }

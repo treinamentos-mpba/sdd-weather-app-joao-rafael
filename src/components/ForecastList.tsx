@@ -20,15 +20,12 @@ export default function ForecastList({ days, unit }: ForecastListProps) {
         Number.isFinite(timestamp) &&
         new Date(timestamp).toISOString().slice(0, 10) === day.date &&
         timestamp === firstDate + index * 86_400_000 &&
-        [
-          day.temperatureMaxC,
-          day.temperatureMinC,
-          day.weatherCode,
-          day.precipitationProbabilityPercent,
-        ].every(Number.isFinite) &&
+        [day.temperatureMaxC, day.temperatureMinC, day.weatherCode].every(Number.isFinite) &&
         day.temperatureMaxC >= day.temperatureMinC &&
-        day.precipitationProbabilityPercent >= 0 &&
-        day.precipitationProbabilityPercent <= 100
+        (day.precipitationProbabilityPercent === null ||
+          (Number.isFinite(day.precipitationProbabilityPercent) &&
+            day.precipitationProbabilityPercent >= 0 &&
+            day.precipitationProbabilityPercent <= 100))
       );
     });
 

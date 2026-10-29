@@ -21,11 +21,20 @@ export class WeatherServiceError extends Error {
   }
 }
 
-export async function fetchWithTimeout(url: string): Promise<Response> {
+export function fetchWithTimeout(url: string): Promise<Response>;
+export function fetchWithTimeout<T>(
+  url: string,
+  consume: (response: Response) => Promise<T>,
+): Promise<T>;
+export async function fetchWithTimeout<T>(
+  url: string,
+  consume?: (response: Response) => Promise<T>,
+): Promise<Response | T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 10_000);
   try {
-    return await fetch(url, { signal: controller.signal });
+    const response = await fetch(url, { signal: controller.signal });
+    return consume ? await consume(response) : response;
   } catch (error) {
     if (isRecord(error) && error.name === 'AbortError') {
       throw new WeatherServiceError('A requisição demorou demais.', undefined, 'timeout');
@@ -37,6 +46,15 @@ export async function fetchWithTimeout(url: string): Promise<Response> {
   } finally {
     clearTimeout(timer);
   }
+}
+
+function requestJson(url: string, failureMessage: string): Promise<unknown> {
+  return fetchWithTimeout(url, async (response) => {
+    if (!response.ok) {
+      throw new WeatherServiceError(failureMessage, response.status);
+    }
+    return readJson(response);
+  });
 }
 
 async function readJson(response: Response): Promise<unknown> {
@@ -97,14 +115,10 @@ export async function searchCities(name: string): Promise<City[]> {
   const query = name.trim();
   if (!query) return [];
 
-  const response = await fetchWithTimeout(
+  const data = await requestJson(
     `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=8&language=pt&format=json`,
+    'Não foi possível buscar cidades.',
   );
-  if (!response.ok) {
-    throw new WeatherServiceError('Não foi possível buscar cidades.', response.status);
-  }
-
-  const data = await readJson(response);
   if (!isRecord(data) || (data.results !== undefined && !Array.isArray(data.results))) {
     throw new WeatherServiceError('Resposta de cidades inválida.');
   }
@@ -118,6 +132,10 @@ function weatherNumber(value: unknown, min = -Infinity, max = Infinity): number 
     throw new WeatherServiceError('Resposta meteorológica inválida.');
   }
   return value;
+}
+
+function optionalWeatherNumber(value: unknown, min = -Infinity, max = Infinity): number | null {
+  return value === null || value === undefined ? null : weatherNumber(value, min, max);
 }
 
 function validateUnits(value: unknown, expected: Record<string, string>): void {
@@ -142,11 +160,10 @@ export async function getWeather(city: City): Promise<WeatherData> {
     timezone: 'auto',
     timeformat: 'iso8601',
   });
-  const response = await fetchWithTimeout(`https://api.open-meteo.com/v1/forecast?${params}`);
-  if (!response.ok) {
-    throw new WeatherServiceError('Não foi possível carregar a previsão.', response.status);
-  }
-  const data = await readJson(response);
+  const data = await requestJson(
+    `https://api.open-meteo.com/v1/forecast?${params}`,
+    'Não foi possível carregar a previsão.',
+  );
   if (!isRecord(data) || !isRecord(data.current) || !isRecord(data.daily)) {
     throw new WeatherServiceError('Resposta meteorológica incompleta.');
   }
@@ -198,7 +215,10 @@ export async function getWeather(city: City): Promise<WeatherData> {
   const maxima = dailyArray('temperature_2m_max');
   const minima = dailyArray('temperature_2m_min');
   const codes = dailyArray('weather_code');
-  const probabilities = dailyArray('precipitation_probability_max');
+  const probabilities =
+    daily.precipitation_probability_max == null
+      ? Array<null>(5).fill(null)
+      : dailyArray('precipitation_probability_max');
   let previousDate: number | undefined;
   const days: ForecastDay[] = dates.map((date, index) => {
     if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
@@ -219,7 +239,7 @@ export async function getWeather(city: City): Promise<WeatherData> {
       temperatureMinC,
       temperatureMaxC: weatherNumber(maxima[index], temperatureMinC),
       weatherCode: weatherNumber(codes[index]),
-      precipitationProbabilityPercent: weatherNumber(probabilities[index], 0, 100),
+      precipitationProbabilityPercent: optionalWeatherNumber(probabilities[index], 0, 100),
     };
   });
 
@@ -229,11 +249,11 @@ export async function getWeather(city: City): Promise<WeatherData> {
     current: {
       observedAt: current.time,
       temperatureC: weatherNumber(current.temperature_2m),
-      apparentTemperatureC: weatherNumber(current.apparent_temperature),
-      relativeHumidityPercent: weatherNumber(current.relative_humidity_2m, 0, 100),
-      windSpeedKmh: weatherNumber(current.wind_speed_10m, 0),
+      apparentTemperatureC: optionalWeatherNumber(current.apparent_temperature),
+      relativeHumidityPercent: optionalWeatherNumber(current.relative_humidity_2m, 0, 100),
+      windSpeedKmh: optionalWeatherNumber(current.wind_speed_10m, 0),
       precipitationMm: current.precipitation === null ? 0 : weatherNumber(current.precipitation, 0),
-      pressureMslHpa: weatherNumber(current.pressure_msl, Number.MIN_VALUE),
+      pressureMslHpa: optionalWeatherNumber(current.pressure_msl, Number.MIN_VALUE),
       weatherCode: weatherNumber(current.weather_code),
     },
     days,

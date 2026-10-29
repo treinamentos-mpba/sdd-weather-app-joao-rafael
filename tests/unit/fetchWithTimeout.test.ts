@@ -8,6 +8,38 @@ afterEach(() => {
 });
 
 describe('fetchWithTimeout', () => {
+  it('mantém o timeout ativo durante a leitura do corpo após receber cabeçalhos', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((_url: string, options: RequestInit) => {
+        const signal = options.signal;
+        if (!signal) throw new Error('Sinal ausente');
+        return Promise.resolve(
+          new Response(
+            new ReadableStream({
+              start(controller) {
+                signal.addEventListener('abort', () => {
+                  controller.error(new DOMException('Aborted', 'AbortError'));
+                });
+              },
+            }),
+          ),
+        );
+      }),
+    );
+    const request = fetchWithTimeout('https://example.test', (response) => response.json());
+    const rejection = expect(request).rejects.toMatchObject({
+      message: 'A requisição demorou demais.',
+      kind: 'timeout',
+      retryable: true,
+    });
+    await vi.advanceTimersByTimeAsync(9_999);
+    expect(vi.getTimerCount()).toBe(1);
+    await vi.advanceTimersByTimeAsync(1);
+    await rejection;
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('retorna a resposta e remove o timer após sucesso', async () => {
     const response = new Response('{}');
     const fetchMock = vi.fn().mockResolvedValue(response);

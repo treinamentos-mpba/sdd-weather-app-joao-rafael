@@ -12,11 +12,11 @@
 
 | Casos | Evidência / lacuna restante |
 | ----- | -------------------------- |
-| EC-01 | Vazio/espaços cobertos por SearchBar, hook e service; mínimo de dois caracteres/debounce ainda pendente no fluxo por envio. |
-| EC-02–EC-03 | Geocoding sem results coberto por E2E; trim/codificação de caracteres cobertos no service. |
+| EC-01 | Vazio/espaços cobertos por SearchBar, hook, service e E2E (Enter sem requests); mínimo de dois caracteres/debounce ainda pendente no fluxo por envio. |
+| EC-02–EC-03 | Geocoding sem results ou results vazio coberto por E2E, com título/dica de AC-06.4; service e E2E verificam Unicode, caracteres especiais e HTML literal sem alterar identidade nem interpretar código. |
 | EC-04 | Hook testa busca antiga, sucesso e erro de forecast tardios; não há ainda cenário E2E de respostas fora de ordem. |
 | EC-05–EC-08 | Rede com retry, 503 e HTTP 400/401/403/404 cobertos por E2E; timeout de 10 s usa relógio controlado. 408/429 têm classificação unitária, mas Retry-After permanece sem implementação/teste. |
-| EC-09 | Service valida arrays, unidades e valores; E2E rejeita current/daily ausentes e remove dados antigos sem cartão parcial. |
+| EC-09 | Service valida arrays, unidades e valores; E2E rejeita current/daily ausentes e arrays truncados, sem cartões parciais ou NaN/undefined. |
 | EC-10–EC-11 | Código conhecido/desconhecido e localização ausente cobertos por unitários; seleção automática substitui o critério antigo neste fluxo. |
 | EC-12 | Formatação testa virada de ano em Tóquio e datas locais; falta teste de integração validando primeiro dia pela data atual da cidade. |
 | EC-13–EC-14 | Persistência/restauração ainda não implementadas; não declarar esses casos cobertos. |
@@ -148,6 +148,47 @@ individuais listadas em cada tarefa. Gates P1 ligados à spec continuam
 obrigatórios antes da liberação correspondente.
 
 ## Rastreabilidade
+
+### Validação atual dos critérios de aceite
+
+Os comandos abaixo passaram após os incrementos de edge cases e UX:
+
+- `pnpm lint`: sem erros.
+- `pnpm build`: TypeScript e Vite concluídos; JavaScript inicial de 65,86 kB gzip.
+- `pnpm test`: 193 testes em 13 arquivos.
+- `pnpm test:e2e`: 50 execuções, sendo 25 em Chromium e 25 em mobile/WebKit.
+
+Falhas encontradas e corrigidas: opção `exact` de Playwright usada indevidamente
+numa query Testing Library; mensagem de vazio diferente do AC-06.4.
+O primeiro E2E completo não iniciou WebKit por bibliotecas do sistema ausentes;
+`pnpm exec playwright install-deps webkit` corrigiu o ambiente, sem alterar
+dependências do projeto. A execução completa subsequente passou.
+
+Esta evidência não significa aceite integral da spec. A matriz original abaixo
+é de rastreabilidade planejada, não uma declaração de cobertura concluída.
+
+| Critérios | Evidência / pendência |
+| --------- | -------------------- |
+| AC-01.1 | Vazio/espaços cobertos em unit e E2E; envio de um caractere ainda é permitido. |
+| AC-01.2, AC-01.3, AC-01.6 | Autocomplete, debounce e limpeza de sugestões ao editar ainda pendentes; fluxo atual é por envio explícito. |
+| AC-01.4 | Unit e E2E verificam encoding, Unicode, identidade e HTML literal. |
+| AC-01.5, AC-03.5 | Hook descarta respostas tardias; falta cobertura E2E e, na busca, invalidação ao editar sem enviar. |
+| AC-02.1, AC-02.3 | Localização é exibida no clima atual, mas lista de desambiguação/combobox com setas e Escape não foi implementada. |
+| AC-02.2 | Substituído pela decisão de integração registrada na spec: carregar a primeira cidade após envio. Não declarar o critério antigo atendido. |
+| AC-03.1–AC-03.4 | Métricas, placeholders, localização, horário, códigos conhecidos e fallback cobertos; diagnóstico do código desconhecido somente em desenvolvimento. |
+| AC-04.1, AC-04.3 | Cinco datas consecutivas cobertas; falta garantir que a primeira seja a data atual da cidade, inclusive perto da meia-noite. |
+| AC-04.2 | Conteúdo diário, faixas, unidades e probabilidade indisponível cobertos. |
+| AC-05.1–AC-05.4 | Conversão, arredondamento, padrão Celsius, teclado e estado acessível cobertos. |
+| AC-06.1 | Loading com status e aria-busy coberto em ambas as etapas; indicador atual é imediato, não implementa o atraso antiflicker de 200 ms previsto no plano. |
+| AC-06.2 | Rede/timeout/HTTP transitório e retry manual cobertos; Retry-After ainda não é respeitado. |
+| AC-06.3–AC-06.6 | Erro permanente, texto de vazio corrigido, timeout e deduplicação cobertos. |
+| AC-07.1–AC-07.4 | Persistência/restauração não implementadas; indisponibilidade de storage e meta de visita recorrente não validadas. |
+| AC-08.1 | Boas-vindas, instrução e ausência de chamadas iniciais cobertas. |
+
+Gates não funcionais ainda não comprovados integralmente: Lighthouse de produção,
+axe/leitor de tela, Firefox e matriz manual de navegadores, headers HTTPS/CSP do
+deploy, cache/TTL e Error Boundary. Não liberar como conformidade completa apenas
+porque lint/build e a suíte atual estão verdes.
 
 ### Requisitos funcionais → tarefas
 
@@ -307,6 +348,12 @@ verificação correspondentes; não há requisito funcional sem tarefa mapeada.
 
 ### T-07 — Implementar cliente HTTP
 
+- **Revisão de falhas:** o timeout de 10 s agora engloba cabeçalhos e consumo
+  do JSON nas duas APIs, usando callback de consumo em fetchWithTimeout.
+  finally remove o timer em sucesso/erro. Teste com stream bloqueado verifica
+  aborto durante leitura; E2E com context.setOffline testa erro no geocoding
+  e recuperação por retry após reconexão, sem API real.
+
 - **Incremento implementado:** `fetchWithTimeout` em
   `src/services/weatherService.ts` usa AbortController com 10 s e clearTimeout
   no finally. AbortError vira WeatherServiceError com
@@ -361,6 +408,11 @@ verificação correspondentes; não há requisito funcional sem tarefa mapeada.
 - **Tipo:** Data.
 
 ### T-10 — Implementar serviço de previsão
+
+- **Nulidade:** sensação/umidade/vento/pressão e probabilidade diária
+  ausentes/null são normalizados como null e exibidos como “—”; temperatura,
+  horário, fuso e arrays essenciais inválidos continuam erro explícito.
+  A política completa está no Data Model do plano; zero real é preservado.
 
 - **Incremento implementado:** `getWeather(city): Promise<WeatherData>` em
   `src/services/weatherService.ts` valida current/daily, unidades, fuso,
@@ -537,6 +589,11 @@ verificação correspondentes; não há requisito funcional sem tarefa mapeada.
 ## Entrega 6 — Integração
 
 ### T-20 — Compor a tela principal
+
+- **Melhoria incremental de UX:** `aria-busy` no conteúdo durante loading;
+  foco no conteúdo após sucesso, sem mover foco na conversão; input com
+  `text-base` e hover de busca somente quando habilitada. Validar foco,
+  loading e preservação de novas buscas em testes de integração e E2E.
 
 - **Integração atual com API:** substitui a demonstração descrita abaixo.
   App usa useWeather, sem importar mocks ou services; unidade vive na UI.

@@ -6,6 +6,25 @@ import mockWeatherData from '../../src/mocks/weatherData';
 const { city, current } = mockWeatherData;
 
 describe('CurrentWeather', () => {
+  it('exibe traços para métricas ausentes, inclusive sensação em Fahrenheit', () => {
+    render(
+      <CurrentWeather
+        city={city}
+        current={{
+          ...current,
+          apparentTemperatureC: null,
+          relativeHumidityPercent: null,
+          windSpeedKmh: null,
+          pressureMslHpa: null,
+        }}
+        unit="fahrenheit"
+      />,
+    );
+    expect(screen.getByText('Sensação térmica: —')).toBeInTheDocument();
+    expect(screen.getAllByText('—', { exact: true })).toHaveLength(3);
+    expect(screen.getByRole('region')).not.toHaveTextContent(/NaN|undefined|null|32 °F/);
+  });
+
   it('exibe cidade, condição, referência e todas as métricas em pt-BR', () => {
     render(<CurrentWeather city={city} current={current} unit="celsius" />);
 

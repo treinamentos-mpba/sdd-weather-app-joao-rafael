@@ -32,22 +32,27 @@ export default function CurrentWeather({ city, current, unit }: CurrentWeatherPr
     current.weatherCode,
   ];
   if (
-    !numericValues.every(Number.isFinite) ||
-    current.relativeHumidityPercent < 0 ||
-    current.relativeHumidityPercent > 100 ||
-    current.windSpeedKmh < 0 ||
+    !numericValues.every((value) => value === null || Number.isFinite(value)) ||
+    !Number.isFinite(current.temperatureC) ||
+    !Number.isFinite(current.precipitationMm) ||
+    !Number.isFinite(current.weatherCode) ||
+    (current.relativeHumidityPercent !== null &&
+      (current.relativeHumidityPercent < 0 || current.relativeHumidityPercent > 100)) ||
+    (current.windSpeedKmh !== null && current.windSpeedKmh < 0) ||
     current.precipitationMm < 0 ||
-    current.pressureMslHpa <= 0
+    (current.pressureMslHpa !== null && current.pressureMslHpa <= 0)
   ) {
     return <p role="alert">{messages.invalidWeather}</p>;
   }
 
   const location = [city.region, city.country].filter(Boolean).join(', ');
+  const metric = (value: number | null, unit: string) =>
+    value === null ? messages.unavailableValue : `${numberFormat.format(value)} ${unit}`;
   const metrics = [
-    [messages.humidity, `${numberFormat.format(current.relativeHumidityPercent)} %`],
-    [messages.wind, `${numberFormat.format(current.windSpeedKmh)} km/h`],
+    [messages.humidity, metric(current.relativeHumidityPercent, '%')],
+    [messages.wind, metric(current.windSpeedKmh, 'km/h')],
     [messages.precipitation, `${numberFormat.format(current.precipitationMm)} mm`],
-    [messages.pressure, `${numberFormat.format(current.pressureMslHpa)} hPa`],
+    [messages.pressure, metric(current.pressureMslHpa, 'hPa')],
   ];
 
   return (
@@ -73,7 +78,10 @@ export default function CurrentWeather({ city, current, unit }: CurrentWeatherPr
       </div>
       <p className="text-xl">{condition.label}</p>
       <p className="mt-1 text-slate-300">
-        {messages.feelsLike}: {formatTemperature(current.apparentTemperatureC, unit)}
+        {messages.feelsLike}:{' '}
+        {current.apparentTemperatureC === null
+          ? messages.unavailableValue
+          : formatTemperature(current.apparentTemperatureC, unit)}
       </p>
       <p className="mt-2 break-words text-sm text-slate-300">
         {messages.dataReference}:{' '}
