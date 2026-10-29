@@ -269,6 +269,12 @@ verificação correspondentes; não há requisito funcional sem tarefa mapeada.
 
 ### T-07 — Implementar cliente HTTP
 
+- **Incremento implementado:** `fetchWithTimeout` em
+  `src/services/weatherService.ts` usa AbortController com 10 s e clearTimeout
+  no finally. AbortError vira WeatherServiceError com
+  `A requisição demorou demais.`; TypeError de fetch vira `Falha de rede.`.
+  Ambas as consultas usam o helper; outros erros não são mascarados.
+
 - **Descrição:** Encapsular `fetch`, timeout, abort e classificação HTTP.
 - **Critérios de aceite:**
   - Cada chamada usa `AbortController` e aborta em 10.000 ms.
@@ -299,7 +305,8 @@ verificação correspondentes; não há requisito funcional sem tarefa mapeada.
   `searchCities(name): Promise<City[]>` e `WeatherServiceError` com status HTTP.
   Trim vazio não chama rede; nome usa `encodeURIComponent`; resultados
   validados preservam ordem e limite de oito. Não-ok lança erro tipado;
-  erros de rede/JSON propagam sem retry automático. Timeout de 10 s.
+  rede/timeout e JSON inválido viram erros tipados, sem retry automático.
+  Timeout de 10 s.
   Testes em `tests/unit/weatherService.test.ts`. Cache e integração com o
   cliente HTTP compartilhado permanecem nas tarefas correspondentes.
 
@@ -316,6 +323,12 @@ verificação correspondentes; não há requisito funcional sem tarefa mapeada.
 - **Tipo:** Data.
 
 ### T-10 — Implementar serviço de previsão
+
+- **Incremento implementado:** `getWeather(city): Promise<WeatherData>` em
+  `src/services/weatherService.ts` valida current/daily, unidades, fuso,
+  horário e cinco arrays alinhados com datas consecutivas. Dados incompletos
+  ou inválidos lançam WeatherServiceError; não-ok preserva status.
+  O fuso validado também é aplicado à cidade retornada sem mutar o argumento.
 
 - **Descrição:** Consultar e normalizar clima atual e cinco dias.
 - **Critérios de aceite:**
@@ -359,6 +372,13 @@ verificação correspondentes; não há requisito funcional sem tarefa mapeada.
 - **Tipo:** Data.
 
 ### T-13 — Implementar hook de clima
+
+- **Incremento integrado:** `useWeather` expõe status/data/cities/error/query e
+  search/selectCity/retry. Busca enviada carrega o primeiro resultado, conforme
+  decisão de integração na spec (substitui seleção sempre explícita neste
+  fluxo). Retry repete a etapa que falhou; resultados antigos são ignorados,
+  inclusive após desmontagem, e operações concorrentes idênticas não duplicam
+  requests. Cache, storage e indicador atrasado permanecem pendentes.
 
 - **Descrição:** Orquestrar carregamento, seleção atual, cache e retry manual.
 - **Critérios de aceite:**
@@ -479,6 +499,12 @@ verificação correspondentes; não há requisito funcional sem tarefa mapeada.
 ## Entrega 6 — Integração
 
 ### T-20 — Compor a tela principal
+
+- **Integração atual com API:** substitui a demonstração descrita abaixo.
+  App usa useWeather, sem importar mocks ou services; unidade vive na UI.
+  O seletor de estados de demonstração foi removido. Estado de erro mostra a
+  mensagem normalizada e chama retry somente para falhas transitórias.
+  Testes unitários mockam services e E2E interceptam ambas as APIs.
 
 - **Entrega de demonstração:** `App` compõe SearchBar, UnitToggle, clima,
   previsão e os componentes separados LoadingState/ErrorState/EmptyState.

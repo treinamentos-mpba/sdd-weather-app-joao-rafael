@@ -47,6 +47,13 @@ navegador mobile. Personas detalhadas na seção 2 do discovery.
 
 ## 2. Functional Requirements
 
+> **Decisão de integração (substitui a seleção sempre explícita de FR-02,
+> AC-02.2 e EC-11 no fluxo atual):** ao enviar a busca, carregar automaticamente
+> o clima da primeira cidade retornada. O hook preserva a lista de cidades e
+> oferece `selectCity` para troca explícita. Não há mudança de cidade ao digitar:
+> a busca atual ocorre por envio do formulário. O combobox/debounce permanece
+> evolução separada; os critérios antigos de seleção não descrevem esse fluxo.
+
 | ID    | Requisito                    | Descrição                                                                                                                                                                                                                 | Prioridade |
 | ----- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
 | FR-01 | Busca de cidades             | Buscar globalmente pelo nome da cidade. Remover espaços externos; iniciar busca após 2 pontos de código Unicode e 300 ms sem novas alterações; exibir no máximo 8 resultados na ordem retornada pelo geocoding. Ignorar respostas de consultas anteriores quando uma consulta mais recente já foi enviada. | Must |

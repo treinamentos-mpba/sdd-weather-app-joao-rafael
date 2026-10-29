@@ -6,6 +6,24 @@
 
 ## 1. Architecture
 
+### Contrato do fluxo integrado atual
+
+`useWeather` expõe `status`, `data`, `cities`, `error`, `query`, `search`,
+`selectCity` e `retry`. Busca enviada consulta geocoding e carrega o primeiro
+resultado automaticamente, conforme decisão de integração registrada na spec.
+`retry` repete a última etapa: geocoding se a busca falhou; forecast se já
+existe cidade resolvida. Sem repetição automática. Respostas substituídas e
+resultados após desmontagem são descartados; operação idêntica pendente não
+é duplicada. Requests substituídos ainda podem completar na camada de serviço.
+
+`App` não conhece endpoints, mocks nem conversão de payload. `unit` pertence
+somente à UI; o hook mantém dados Celsius. O texto local do SearchBar é um
+rascunho, enquanto `query` é o último termo enviado, não estados duplicados.
+O serviço normaliza HTTP, rede, timeout e JSON inválido em WeatherServiceError;
+`retryable` distingue falhas transitórias de erros permanentes/dados inválidos.
+UI oferece retry somente para as transitórias. Cache, persistência,
+combobox/debounce e respeito a Retry-After ainda são incrementos pendentes.
+
 Aplicação SPA client-side sem backend próprio. Componentes de UI não conhecem
 URLs nem formatos externos: a camada de serviço converte as respostas da
 Open-Meteo para modelos internos e valida os campos antes de disponibilizá-los.

@@ -6,17 +6,14 @@ import EmptyState from './components/states/EmptyState';
 import ErrorState from './components/states/ErrorState';
 import LoadingState from './components/states/LoadingState';
 import UnitToggle from './components/UnitToggle';
-import useMockWeather, { type DemoStatus } from './hooks/useMockWeather';
+import useWeather from './hooks/useWeather';
 import { messages } from './lib/messages';
-import mockWeatherData from './mocks/weatherData';
 import type { Unit } from './types/weather';
-
-const demoStatuses: DemoStatus[] = ['idle', 'loading', 'empty', 'error', 'success'];
 
 export default function App() {
   const [unit, setUnit] = useState<Unit>('celsius');
   const mainRef = useRef<HTMLElement>(null);
-  const { status, search, preview, retry } = useMockWeather();
+  const { status, data, error, search, retry } = useWeather();
 
   return (
     <div className="min-h-screen bg-night-900 font-sans text-white">
@@ -33,27 +30,6 @@ export default function App() {
             <UnitToggle unit={unit} onChange={setUnit} />
           </div>
           <SearchBar onSearch={search} />
-          <p className="text-sm text-slate-300">{messages.demoNotice}</p>
-          <div className="flex flex-wrap items-center gap-3">
-            <label htmlFor="demo-state" className="text-sm">
-              {messages.demoState}
-            </label>
-            <select
-              id="demo-state"
-              value={status}
-              onChange={(event) => {
-                const selected = demoStatuses.find((value) => value === event.target.value);
-                if (selected) preview(selected);
-              }}
-              className="min-h-11 rounded-lg border border-slate-400 bg-night-800 px-3 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-400"
-            >
-              {demoStatuses.map((value) => (
-                <option key={value} value={value}>
-                  {messages[value]}
-                </option>
-              ))}
-            </select>
-          </div>
         </header>
         <main
           ref={mainRef}
@@ -66,23 +42,23 @@ export default function App() {
           )}
           {status === 'loading' && <LoadingState />}
           {status === 'empty' && <EmptyState />}
-          {status === 'error' && (
+          {status === 'error' && error && (
             <ErrorState
-              message={messages.demoError}
-              onRetry={() => {
-                retry();
-                mainRef.current?.focus();
-              }}
+              message={error.message}
+              onRetry={
+                error.retryable
+                  ? () => {
+                      retry();
+                      mainRef.current?.focus();
+                    }
+                  : undefined
+              }
             />
           )}
-          {status === 'success' && (
+          {status === 'success' && data && (
             <>
-              <CurrentWeather
-                city={mockWeatherData.city}
-                current={mockWeatherData.current}
-                unit={unit}
-              />
-              <ForecastList days={mockWeatherData.days} unit={unit} />
+              <CurrentWeather city={data.city} current={data.current} unit={unit} />
+              <ForecastList days={data.days} unit={unit} />
             </>
           )}
         </main>
