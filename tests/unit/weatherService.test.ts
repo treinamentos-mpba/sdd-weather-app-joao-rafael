@@ -163,6 +163,22 @@ describe('searchCities', () => {
   }
 
   describe('getWeather', () => {
+    it('normaliza precipitação atual null para zero', async () => {
+      const data = forecastResponse();
+      mockResponse({ ...data, current: { ...data.current, precipitation: null } });
+      const result = await getWeather(mockWeatherData.city);
+      expect(result.current.precipitationMm).toBe(0);
+      expect(result.days).toEqual(mockWeatherData.days);
+    });
+
+    it('não mascara precipitação ausente como zero', async () => {
+      const data = forecastResponse();
+      const current: Record<string, unknown> = { ...data.current };
+      delete current.precipitation;
+      mockResponse({ ...data, current });
+      await expect(getWeather(mockWeatherData.city)).rejects.toBeInstanceOf(WeatherServiceError);
+    });
+
     it('solicita os campos e unidades definidos e mapeia todos os índices diários', async () => {
       const fetchMock = mockResponse(forecastResponse());
       const inputCity = { ...mockWeatherData.city, timezone: null };

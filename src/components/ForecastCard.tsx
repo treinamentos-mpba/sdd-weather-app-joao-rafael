@@ -1,6 +1,6 @@
 import { formatForecastDay } from '../lib/format';
 import { messages } from '../lib/messages';
-import { toDisplayTemperature } from '../lib/temperature';
+import { formatTemperature } from '../lib/temperature';
 import { getWeatherCondition } from '../lib/weatherCodes';
 import type { ForecastDay, Unit } from '../types/weather';
 
@@ -11,8 +11,6 @@ interface ForecastCardProps {
 
 export default function ForecastCard({ day, unit }: ForecastCardProps) {
   const condition = getWeatherCondition(day.weatherCode);
-  const temperature = (value: number) =>
-    `${toDisplayTemperature(value, unit).toLocaleString('pt-BR')} ${messages[unit]}`;
 
   return (
     <article
@@ -29,11 +27,11 @@ export default function ForecastCard({ day, unit }: ForecastCardProps) {
       <dl className="mt-4 space-y-2">
         <div>
           <dt className="text-sm text-slate-300">{messages.maximum}</dt>
-          <dd className="text-xl font-semibold">{temperature(day.temperatureMaxC)}</dd>
+          <dd className="text-xl font-semibold">{formatTemperature(day.temperatureMaxC, unit)}</dd>
         </div>
         <div>
           <dt className="text-sm text-slate-300">{messages.minimum}</dt>
-          <dd>{temperature(day.temperatureMinC)}</dd>
+          <dd>{formatTemperature(day.temperatureMinC, unit)}</dd>
         </div>
         <div>
           <dt className="text-sm text-slate-300">{messages.rainProbability}</dt>

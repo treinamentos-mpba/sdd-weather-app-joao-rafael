@@ -124,7 +124,10 @@ describe('useWeather', () => {
     expect(result.current.error).toBeNull();
   });
 
-  it('descarta forecast antigo e erro tardio após nova seleção', async () => {
+  it.each([
+    'success',
+    'error',
+  ])('descarta forecast antigo com %s após nova seleção', async (outcome) => {
     const old = deferred<WeatherData>();
     vi.mocked(getWeather).mockReturnValueOnce(old.promise);
     const { result } = renderHook(() => useWeather());
@@ -132,6 +135,7 @@ describe('useWeather', () => {
     act(() => {
       request = result.current.selectCity(mockWeatherData.city);
     });
+
     const other = {
       ...mockWeatherData,
       city: { ...mockWeatherData.city, name: 'Outra cidade', latitude: 10 },
@@ -139,7 +143,8 @@ describe('useWeather', () => {
     vi.mocked(getWeather).mockResolvedValueOnce(other);
     await act(() => result.current.selectCity(other.city));
     await act(async () => {
-      old.reject(new WeatherServiceError('Erro antigo'));
+      if (outcome === 'success') old.resolve(mockWeatherData);
+      else old.reject(new WeatherServiceError('Erro antigo'));
       await request;
     });
     expect(result.current.data).toEqual(other);

@@ -18,3 +18,19 @@ export function formatObservedAt(observedAt: string, timezone: string | null): s
     timeZone: hasOffset ? timezone : 'UTC',
   }).format(new Date(hasOffset ? observedAt : `${observedAt}Z`));
 }
+export function getDayLabel(date: string, index: number): string {
+  if (index === 0) return 'Hoje';
+  if (index === 1) return 'Amanhã';
+  return new Intl.DateTimeFormat('pt-BR', {
+    weekday: 'short',
+    timeZone: 'UTC',
+  }).format(new Date(`${date}T00:00:00Z`));
+}
+
+export function getShortDate(date: string): string {
+  return new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    timeZone: 'UTC',
+  }).format(new Date(`${date}T00:00:00Z`));
+}

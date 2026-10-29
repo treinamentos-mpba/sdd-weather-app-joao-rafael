@@ -8,6 +8,33 @@
 > componentes → integração → testes → hardening. Cada tarefa tem um escopo
 > limitado, dependências explícitas e critérios de aceite verificáveis.
 
+## Revisão de cobertura de edge cases e estabilidade E2E
+
+| Casos | Evidência / lacuna restante |
+| ----- | -------------------------- |
+| EC-01 | Vazio/espaços cobertos por SearchBar, hook e service; mínimo de dois caracteres/debounce ainda pendente no fluxo por envio. |
+| EC-02–EC-03 | Geocoding sem results coberto por E2E; trim/codificação de caracteres cobertos no service. |
+| EC-04 | Hook testa busca antiga, sucesso e erro de forecast tardios; não há ainda cenário E2E de respostas fora de ordem. |
+| EC-05–EC-08 | Rede com retry, 503 e HTTP 400/401/403/404 cobertos por E2E; timeout de 10 s usa relógio controlado. 408/429 têm classificação unitária, mas Retry-After permanece sem implementação/teste. |
+| EC-09 | Service valida arrays, unidades e valores; E2E rejeita current/daily ausentes e remove dados antigos sem cartão parcial. |
+| EC-10–EC-11 | Código conhecido/desconhecido e localização ausente cobertos por unitários; seleção automática substitui o critério antigo neste fluxo. |
+| EC-12 | Formatação testa virada de ano em Tóquio e datas locais; falta teste de integração validando primeiro dia pela data atual da cidade. |
+| EC-13–EC-14 | Persistência/restauração ainda não implementadas; não declarar esses casos cobertos. |
+| EC-15 | Hook testa operação duplicada pendente, inclusive durante forecast após busca. |
+| EC-16 | E2E testa 320–1280 px e mobile 375×812 com rotação sem perder unidade/dados. |
+| EC-17 | Unitários e E2E cobrem 0/100/-40 °C, negativos/fracionários, todos os máximos/mínimos e ausência de requests ao alternar unidade. |
+| EC-18 | Cache/TTL ainda pendentes; cobertura de cache expirado não existe. |
+
+E2E usa fixtures locais compartilhadas, page.route instalado antes da busca,
+queries por role/nome e asserts com auto-retry. O timeout usa page.clock, não
+sleep; espera por request é registrada antes do clique. Nomes de temperatura
+são escopados à região do clima para não colidir com a previsão. O único
+seletor estrutural identifica o spinner decorativo dentro do status, pois
+ele intencionalmente não pertence à árvore acessível. Não adicionar esperas
+fixas nem aumentar retries para esconder falhas; aguardar estado visível ou
+evento de rede específico. Repetir a suíte verifica estabilidade, não prova
+ausência de flakiness. Validação atual no Chromium não substitui WebKit/Firefox.
+
 ## Gates externos
 
 - **OQ-04:** aprovar os campos meteorológicos antes de congelar os contratos e a
@@ -230,6 +257,12 @@ verificação correspondentes; não há requisito funcional sem tarefa mapeada.
 
 ### T-04 — Implementar conversão de temperatura
 
+- **Helpers implementados:** `convertTemperature(valueC, unit)` deriva da base
+  Celsius sem arredondar; `toDisplayTemperature` arredonda para apresentação;
+  `formatTemperature` aplica locale pt-BR, espaço e símbolo de `unitLabel`.
+  Clima atual e previsão reutilizam o formatador. Testes cobrem os pontos
+  0/100/-40 °C, precisão, empates negativos, zero sem sinal e ambas as unidades.
+
 - **Descrição:** Converter temperatura canônica em Celsius para apresentação
   Celsius/Fahrenheit.
 - **Critérios de aceite:**
@@ -253,6 +286,11 @@ verificação correspondentes; não há requisito funcional sem tarefa mapeada.
 - **Tipo:** Data.
 
 ### T-06 — Implementar formatação temporal
+
+- **Helpers adicionais:** `getDayLabel(date, index)` retorna Hoje no índice 0,
+  Amanhã no 1 e dia abreviado nos demais; `getShortDate(date)` retorna DD/MM.
+  Ambos usam a data local YYYY-MM-DD sem aplicar o fuso do navegador.
+  `formatForecastDay` preserva o rótulo completo já usado nos cards.
 
 - **Descrição:** Formatar timestamp e data diária com locale e timezone
   explícitos.
@@ -626,6 +664,10 @@ verificação correspondentes; não há requisito funcional sem tarefa mapeada.
 - **Tipo:** Test.
 
 ### T-29 — Testar serviço de previsão
+
+- **Cobertura adicional:** precipitação atual null vira zero; ausência do
+  campo continua erro. Mock de fetch valida mapeamento completo de current e
+  cinco dias, parâmetros/unidades e current/daily ausentes. Não usa API real.
 
 - **Descrição:** Validar request, mapeamento e rejeição de payload inválido.
 - **Critérios de aceite:**

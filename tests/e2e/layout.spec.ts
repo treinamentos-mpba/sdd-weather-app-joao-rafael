@@ -1,67 +1,18 @@
 import { expect, test } from '@playwright/test';
-import mockWeatherData from '../../src/mocks/weatherData';
+import { forecastResponse, geocodingResponse } from '../fixtures/weatherApi';
 
 test.beforeEach(async ({ page }) => {
   await page.route('https://geocoding-api.open-meteo.com/**', async (route) => {
     const name = new URL(route.request().url()).searchParams.get('name');
     await route.fulfill({
       json: {
-        results:
-          name === 'Vazio'
-            ? []
-            : [
-                {
-                  name: mockWeatherData.city.name,
-                  latitude: mockWeatherData.city.latitude,
-                  longitude: mockWeatherData.city.longitude,
-                  country: 'Brasil',
-                  admin1: 'São Paulo',
-                  timezone: 'America/Sao_Paulo',
-                },
-              ],
+        results: name === 'Vazio' ? [] : geocodingResponse.results,
       },
     });
   });
   await page.route('https://api.open-meteo.com/**', async (route) => {
-    const { current, days, timezone } = mockWeatherData;
     await route.fulfill({
-      json: {
-        timezone,
-        current_units: {
-          time: 'iso8601',
-          temperature_2m: '°C',
-          apparent_temperature: '°C',
-          relative_humidity_2m: '%',
-          wind_speed_10m: 'km/h',
-          precipitation: 'mm',
-          pressure_msl: 'hPa',
-          weather_code: 'wmo code',
-        },
-        daily_units: {
-          time: 'iso8601',
-          temperature_2m_max: '°C',
-          temperature_2m_min: '°C',
-          weather_code: 'wmo code',
-          precipitation_probability_max: '%',
-        },
-        current: {
-          time: '2026-10-29T14:00',
-          temperature_2m: current.temperatureC,
-          apparent_temperature: current.apparentTemperatureC,
-          relative_humidity_2m: current.relativeHumidityPercent,
-          wind_speed_10m: current.windSpeedKmh,
-          precipitation: current.precipitationMm,
-          pressure_msl: current.pressureMslHpa,
-          weather_code: current.weatherCode,
-        },
-        daily: {
-          time: days.map((day) => day.date),
-          temperature_2m_max: days.map((day) => day.temperatureMaxC),
-          temperature_2m_min: days.map((day) => day.temperatureMinC),
-          weather_code: days.map((day) => day.weatherCode),
-          precipitation_probability_max: days.map((day) => day.precipitationProbabilityPercent),
-        },
-      },
+      json: forecastResponse(),
     });
   });
 });
@@ -134,7 +85,10 @@ test('contraste de controles, foco e movimento reduzido', async ({ page }) => {
   await page.route('https://geocoding-api.open-meteo.com/**', () => {});
   await button.click();
   const spinner = page.getByRole('status').locator('[aria-hidden]');
-  expect(await spinner.evaluate((element) => getComputedStyle(element).animationName)).toBe('none');
+  await expect(page.getByRole('status')).toBeVisible();
+  await expect
+    .poll(() => spinner.evaluate((element) => getComputedStyle(element).animationName))
+    .toBe('none');
 });
 
 for (const width of [320, 360, 768, 1280]) {

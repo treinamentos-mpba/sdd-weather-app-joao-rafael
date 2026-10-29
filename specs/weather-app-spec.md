@@ -238,6 +238,8 @@ Then são exibidos: temperatura atual, condição (texto em pt-BR + ícone),
 And nenhum campo exibe "undefined", "NaN" ou valor vazio
 And se um campo obrigatório estiver ausente ou inválido, o app exibe erro
   de dados em vez de apresentar um cartão parcial como completo
+And a exceção explícita é precipitação atual null, normalizada para 0 mm;
+  campo ausente não é normalizado
 ```
 
 **AC-03.2 — Identificação e frescor** *(Teste-alvo: E2E)*

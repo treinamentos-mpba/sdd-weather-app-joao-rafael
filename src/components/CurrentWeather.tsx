@@ -1,7 +1,7 @@
 import { useEffect, useId } from 'react';
 import { formatObservedAt } from '../lib/format';
 import { messages } from '../lib/messages';
-import { toDisplayTemperature } from '../lib/temperature';
+import { formatTemperature } from '../lib/temperature';
 import { getWeatherCondition } from '../lib/weatherCodes';
 import type { City, CurrentWeather as CurrentWeatherData, Unit } from '../types/weather';
 
@@ -43,8 +43,6 @@ export default function CurrentWeather({ city, current, unit }: CurrentWeatherPr
   }
 
   const location = [city.region, city.country].filter(Boolean).join(', ');
-  const temperature = (value: number) =>
-    `${toDisplayTemperature(value, unit).toLocaleString('pt-BR')} ${messages[unit]}`;
   const metrics = [
     [messages.humidity, `${numberFormat.format(current.relativeHumidityPercent)} %`],
     [messages.wind, `${numberFormat.format(current.windSpeedKmh)} km/h`],
@@ -70,12 +68,12 @@ export default function CurrentWeather({ city, current, unit }: CurrentWeatherPr
           {condition.icon}
         </span>
         <p className="max-w-full break-words text-5xl font-semibold tracking-tight sm:text-8xl">
-          {temperature(current.temperatureC)}
+          {formatTemperature(current.temperatureC, unit)}
         </p>
       </div>
       <p className="text-xl">{condition.label}</p>
       <p className="mt-1 text-slate-300">
-        {messages.feelsLike}: {temperature(current.apparentTemperatureC)}
+        {messages.feelsLike}: {formatTemperature(current.apparentTemperatureC, unit)}
       </p>
       <p className="mt-2 break-words text-sm text-slate-300">
         {messages.dataReference}:{' '}

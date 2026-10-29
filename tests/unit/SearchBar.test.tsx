@@ -27,7 +27,7 @@ describe('SearchBar', () => {
     const onSearch = vi.fn();
     render(<SearchBar onSearch={onSearch} />);
 
-    await user.type(screen.getByRole('searchbox'), '  São Paulo  ');
+    await user.type(screen.getByLabelText('Buscar cidade', { selector: 'input' }), '  São Paulo  ');
     expect(onSearch).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: 'Buscar' }));
 

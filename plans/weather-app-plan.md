@@ -356,7 +356,7 @@ GET https://api.open-meteo.com/v1/forecast
 | `current.apparent_temperature` | `current.apparentTemperatureC` |
 | `current.relative_humidity_2m` | `current.relativeHumidityPercent` |
 | `current.wind_speed_10m` | `current.windSpeedKmh` |
-| `current.precipitation` | `current.precipitationMm` |
+| `current.precipitation` | `current.precipitationMm`; exceção explícita: `null` vira `0`, campo ausente continua inválido |
 | `current.pressure_msl` | `current.pressureMslHpa` |
 | `current.weather_code` | `current.weatherCode`; mapear para texto pt-BR/ícone na UI |
 | Índice `i` de `daily.time` | `days[i].date` |
