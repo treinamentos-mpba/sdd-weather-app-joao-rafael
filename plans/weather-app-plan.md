@@ -124,6 +124,8 @@ interface CurrentWeather {
   apparentTemperatureC: number;
   relativeHumidityPercent: number;
   windSpeedKmh: number;
+  precipitationMm: number; // Acumulado no intervalo atual do provedor
+  pressureMslHpa: number; // Pressão ao nível do mar
   weatherCode: number;
 }
 
@@ -131,6 +133,7 @@ interface ForecastDay {
   date: string; // YYYY-MM-DD no fuso da cidade
   temperatureMaxC: number;
   temperatureMinC: number;
+  precipitationProbabilityPercent: number; // Maior probabilidade diária, 0–100%
   weatherCode: number;
 }
 
@@ -252,8 +255,8 @@ coordenadas antes de usar um resultado. Ignorar respostas que não correspondam
 GET https://api.open-meteo.com/v1/forecast
     ?latitude=-12.97111
     &longitude=-38.51083
-    &current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code
-    &daily=weather_code,temperature_2m_max,temperature_2m_min
+    &current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,precipitation,pressure_msl,weather_code
+    &daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max
     &forecast_days=5
     &temperature_unit=celsius
     &wind_speed_unit=kmh
@@ -264,8 +267,8 @@ GET https://api.open-meteo.com/v1/forecast
 | Parâmetro | Valor/uso |
 | --------- | --------- |
 | `latitude`, `longitude` | Coordenadas da cidade selecionada ou salva. |
-| `current` | `temperature_2m`, `apparent_temperature`, `relative_humidity_2m`, `wind_speed_10m`, `weather_code`. |
-| `daily` | `weather_code`, `temperature_2m_max`, `temperature_2m_min`. |
+| `current` | `temperature_2m`, `apparent_temperature`, `relative_humidity_2m`, `wind_speed_10m`, `precipitation`, `pressure_msl`, `weather_code`. Precipitação em mm no intervalo atual (não probabilidade); pressão ao nível do mar em hPa. |
+| `daily` | `weather_code`, `temperature_2m_max`, `temperature_2m_min`, `precipitation_probability_max` (maior probabilidade diária, 0–100%). |
 | `forecast_days` | `5` — hoje + 4 dias, conforme D-02. |
 | `temperature_unit` | `celsius`; temperaturas internas permanecem Celsius. |
 | `wind_speed_unit` | `kmh`. |
@@ -287,6 +290,8 @@ GET https://api.open-meteo.com/v1/forecast
     "apparent_temperature": "°C",
     "relative_humidity_2m": "%",
     "wind_speed_10m": "km/h",
+    "precipitation": "mm",
+    "pressure_msl": "hPa",
     "weather_code": "wmo code"
   },
   "current": {
@@ -295,13 +300,16 @@ GET https://api.open-meteo.com/v1/forecast
     "apparent_temperature": 30.1,
     "relative_humidity_2m": 72,
     "wind_speed_10m": 13.2,
+    "precipitation": 0.2,
+    "pressure_msl": 1013.2,
     "weather_code": 2
   },
   "daily_units": {
     "time": "iso8601",
     "weather_code": "wmo code",
     "temperature_2m_max": "°C",
-    "temperature_2m_min": "°C"
+    "temperature_2m_min": "°C",
+    "precipitation_probability_max": "%"
   },
   "daily": {
     "time": [
@@ -313,7 +321,8 @@ GET https://api.open-meteo.com/v1/forecast
     ],
     "weather_code": [2, 3, 61, 2, 0],
     "temperature_2m_max": [29.1, 28.7, 26.4, 29.0, 30.2],
-    "temperature_2m_min": [23.0, 22.8, 22.1, 22.5, 23.2]
+    "temperature_2m_min": [23.0, 22.8, 22.1, 22.5, 23.2],
+    "precipitation_probability_max": [20, 35, 80, 10, 0]
   }
 }
 ```
@@ -329,9 +338,12 @@ GET https://api.open-meteo.com/v1/forecast
 | `current.apparent_temperature` | `current.apparentTemperatureC` |
 | `current.relative_humidity_2m` | `current.relativeHumidityPercent` |
 | `current.wind_speed_10m` | `current.windSpeedKmh` |
+| `current.precipitation` | `current.precipitationMm` |
+| `current.pressure_msl` | `current.pressureMslHpa` |
 | `current.weather_code` | `current.weatherCode`; mapear para texto pt-BR/ícone na UI |
 | Índice `i` de `daily.time` | `days[i].date` |
 | Índice `i` de `daily.temperature_2m_max/min` | `days[i].temperatureMaxC/temperatureMinC` |
+| Índice `i` de `daily.precipitation_probability_max` | `days[i].precipitationProbabilityPercent`; validar valor finito de 0 a 100 |
 | Índice `i` de `daily.weather_code` | `days[i].weatherCode`; mapear para texto pt-BR/ícone |
 
 Arrays de `daily` são paralelos: validar que todos os campos têm exatamente

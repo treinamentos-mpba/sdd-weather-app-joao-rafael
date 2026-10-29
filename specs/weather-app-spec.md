@@ -51,8 +51,8 @@ navegador mobile. Personas detalhadas na seção 2 do discovery.
 | ----- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
 | FR-01 | Busca de cidades             | Buscar globalmente pelo nome da cidade. Remover espaços externos; iniciar busca após 2 pontos de código Unicode e 300 ms sem novas alterações; exibir no máximo 8 resultados na ordem retornada pelo geocoding. Ignorar respostas de consultas anteriores quando uma consulta mais recente já foi enviada. | Must |
 | FR-02 | Desambiguação de cidades     | Cada resultado exibe o nome e região/estado e país quando fornecidos pelo geocoding; se ambos faltarem, exibe latitude/longitude com 2 casas decimais. Sempre exigir seleção explícita, inclusive quando houver apenas um resultado; nunca selecionar automaticamente. | Must |
-| FR-03 | Clima atual                  | Após selecionar uma cidade, exibir temperatura atual, condição (texto pt-BR + ícone), sensação térmica, umidade relativa (%) e velocidade do vento (km/h). Exibir a data/hora de referência dos dados fornecida pelo provedor, no fuso da cidade; não rotular como horário de atualização do app. Ignorar respostas tardias de uma cidade que já foi substituída. | Must |
-| FR-04 | Previsão diária              | Exibir exatamente hoje + 4 dias no fuso IANA retornado para a cidade: data, máxima, mínima e condição (texto pt-BR + ícone) por dia. A previsão é diária; não há detalhe por hora no MVP. | Must |
+| FR-03 | Clima atual                  | Após selecionar uma cidade, exibir temperatura atual, condição (texto pt-BR + ícone), sensação térmica, umidade relativa (%), velocidade do vento (km/h), precipitação no intervalo atual do provedor (mm, não probabilidade) e pressão ao nível do mar (hPa). Exibir a data/hora de referência dos dados fornecida pelo provedor, no fuso da cidade; não rotular como horário de atualização do app. Ignorar respostas tardias de uma cidade que já foi substituída. | Must |
+| FR-04 | Previsão diária              | Exibir exatamente hoje + 4 dias no fuso IANA retornado para a cidade: data, máxima, mínima, condição (texto pt-BR + ícone) e probabilidade de chuva (maior probabilidade diária de precipitação, 0–100%) por dia. A previsão é diária; não há detalhe por hora no MVP. | Must |
 | FR-05 | Alternância de unidades      | Um controle acessível alterna as temperaturas atual, sensação, máxima e mínima entre °C e °F sem nova chamada de rede. Converter os valores não arredondados e arredondar apenas para apresentação; vento permanece em km/h no MVP. | Must |
 | FR-06 | Estados de interface         | Exibir loading durante consultas, erro em pt-BR com retry manual apenas para falhas transitórias (rede, timeout, HTTP 408/429/5xx), erro sem retry para HTTP 400/401/403/404 e estado vazio quando o geocoding não retornar cidades. Nunca repetir automaticamente uma requisição falha. | Must |
 | FR-07 | Persistência local           | Armazenar somente unidade e última cidade (latitude, longitude, nome, região/estado, país e fuso quando disponíveis) no armazenamento local do navegador. Ao reabrir, solicitar clima atualizado; nunca persistir forecast/clima. Sem backend ou sincronização entre dispositivos. | Should |
@@ -226,7 +226,8 @@ And Escape fecha a lista sem selecionar uma cidade
 Given o usuário selecionou uma cidade válida
 When os dados de clima atual são carregados
 Then são exibidos: temperatura atual, condição (texto em pt-BR + ícone),
-  sensação térmica, umidade relativa (%) e vento (km/h)
+  sensação térmica, umidade relativa (%), vento (km/h), precipitação (mm)
+  e pressão ao nível do mar (hPa)
 And nenhum campo exibe "undefined", "NaN" ou valor vazio
 And se um campo obrigatório estiver ausente ou inválido, o app exibe erro
   de dados em vez de apresentar um cartão parcial como completo
@@ -288,7 +289,8 @@ And "hoje" é calculado no fuso horário da cidade consultada
 Given a previsão de 5 dias está exibida
 When o usuário observa cada entrada
 Then cada dia mostra: dia da semana abreviado em pt-BR (ex.: "qua."),
-  temperatura máxima, temperatura mínima e condição (texto + ícone)
+  temperatura máxima, temperatura mínima, condição (texto + ícone)
+  e probabilidade de chuva (0–100%, não volume em mm)
 And máxima é sempre maior ou igual à mínima
 And a data de cada entrada é distinta e consecutiva no fuso da cidade
 ```

@@ -295,6 +295,14 @@ verificação correspondentes; não há requisito funcional sem tarefa mapeada.
 
 ### T-09 — Implementar serviço de geocoding
 
+- **Incremento implementado:** `src/services/weatherService.ts` exporta
+  `searchCities(name): Promise<City[]>` e `WeatherServiceError` com status HTTP.
+  Trim vazio não chama rede; nome usa `encodeURIComponent`; resultados
+  validados preservam ordem e limite de oito. Não-ok lança erro tipado;
+  erros de rede/JSON propagam sem retry automático. Timeout de 10 s.
+  Testes em `tests/unit/weatherService.test.ts`. Cache e integração com o
+  cliente HTTP compartilhado permanecem nas tarefas correspondentes.
+
 - **Descrição:** Consultar Open-Meteo e normalizar resultados para `City`.
 - **Critérios de aceite:**
   - Request `GET /v1/search` envia `name` trimado, `count=8`, `language=pt` e
@@ -383,6 +391,12 @@ verificação correspondentes; não há requisito funcional sem tarefa mapeada.
 
 ### T-15 — Implementar combobox de cidades
 
+- **Incremento de UI:** `src/components/SearchBar.tsx` oferece formulário
+  `role="search"`, label acessível, `onSearch(city: string)` com trim e bloqueio
+  de vazio, além de `disabled`. Envio explícito por botão/Enter; não substitui
+  o combobox nem o debounce de T-12. Strings em `src/lib/messages.ts` e testes
+  em `tests/unit/SearchBar.test.tsx`.
+
 - **Descrição:** Renderizar busca, opções e estados recebidos por props.
 - **Critérios de aceite:**
   - Setas navegam opções, Enter seleciona a opção ativa, Escape fecha a lista;
@@ -397,9 +411,17 @@ verificação correspondentes; não há requisito funcional sem tarefa mapeada.
 
 ### T-16 — Implementar cartão de clima atual
 
+- **Contrato atualizado:** props `city`, `current` e `unit`; hero usa
+  `lib/temperature` e `lib/weatherCodes`. `CurrentWeather` inclui
+  `precipitationMm` e `pressureMslHpa`, mapeados de `precipitation` e
+  `pressure_msl` da Open-Meteo conforme FR-03 atualizado. O mock inclui ambos.
+  O fuso de apresentação vem de `city.timezone`; a integração deve preenchê-lo
+  com o fuso validado do snapshot quando o geocoding não o fornecer.
+
 - **Descrição:** Renderizar clima atual, localização e horário de referência.
 - **Critérios de aceite:**
-  - Exibe temperatura, sensação, umidade, vento km/h, condição e ícone de FR-03.
+  - Exibe temperatura, sensação, umidade, vento km/h, precipitação mm, pressão
+    ao nível do mar hPa, condição e ícone de FR-03.
   - Timestamp usa timezone do snapshot e não é rotulado como horário de
     atualização do app.
   - Mostra região/país disponíveis; sem ambos, mostra coordenadas com duas casas.
@@ -409,17 +431,29 @@ verificação correspondentes; não há requisito funcional sem tarefa mapeada.
 
 ### T-17 — Implementar lista de previsão
 
+- **Contrato atualizado:** `ForecastList` recebe `days` e `unit`, usa grid
+  `grid-cols-2 sm:grid-cols-3 lg:grid-cols-5` e delega cada entrada a
+  `ForecastCard` (`day`, `unit`). `ForecastDay` inclui
+  `precipitationProbabilityPercent` (0–100), mapeado de
+  `daily.precipitation_probability_max`. O mock inclui o campo nos cinco dias.
+
 - **Descrição:** Renderizar cinco dias da previsão diária.
 - **Critérios de aceite:**
   - Renderiza exatamente os cinco dias, na ordem recebida.
-  - Cada item mostra dia abreviado em pt-BR, data, máxima, mínima, condição e
-    ícone.
+  - Cada item mostra dia abreviado em pt-BR, data, máxima, mínima, condição,
+    ícone e probabilidade de chuva (%).
   - Nenhum item renderiza campo ausente, `NaN` ou `undefined`.
 - **Dependências:** T-02, T-05, T-06.
-- **Arquivos prováveis:** `src/components/ForecastList.tsx`.
+- **Arquivos prováveis:** `src/components/ForecastList.tsx`,
+  `src/components/ForecastCard.tsx`.
 - **Tipo:** UI.
 
 ### T-18 — Implementar controle de unidade
+
+- **Incremento de UI:** `UnitToggle` recebe `unit: Unit` e `onChange`, com
+  dois botões °C/°F, `aria-pressed` e grupo nomeado. Navegação nativa por
+  Tab/Shift+Tab e ativação por Enter/Espaço. Conversão e formatação dos dados
+  permanecem responsabilidade da apresentação do clima, fora deste controle.
 
 - **Descrição:** Renderizar controle acessível de alternância °C/°F.
 - **Critérios de aceite:**
@@ -445,6 +479,22 @@ verificação correspondentes; não há requisito funcional sem tarefa mapeada.
 ## Entrega 6 — Integração
 
 ### T-20 — Compor a tela principal
+
+- **Entrega de demonstração:** `App` compõe SearchBar, UnitToggle, clima,
+  previsão e os componentes separados LoadingState/ErrorState/EmptyState.
+  `useMockWeather` simula busca e latência local com limpeza do timer; não
+  acessa API nem storage. O seletor de estados e os dados fixos são
+  explicitamente identificados como demonstração, não comportamento de produção.
+  `unit` vive na UI; a conversão permanece derivada na renderização.
+  Retry é opcional no ErrorState para permitir erros permanentes sem botão.
+  Testes cobrem estados, teclado e layout em 320, 360, 768 e 1280 px.
+  Revisão de a11y: skip link para main focável, hierarquia h1/h2/h3,
+  ícones decorativos ocultos, estados anunciados, foco preservado no retry,
+  animação desativada com movimento reduzido, bordas de controles contrastantes
+  e quebras de texto em cards estreitos. Testes no Chromium verificam grid,
+  overflow, alvos de botões >= 44 px e contraste de texto/controles.
+  Ainda requer auditoria completa WCAG com leitor de tela, axe e browsers
+  adicionais; estes testes não equivalem a certificação de acessibilidade.
 
 - **Descrição:** Conectar hooks e componentes à experiência da tela inicial.
 - **Critérios de aceite:**
